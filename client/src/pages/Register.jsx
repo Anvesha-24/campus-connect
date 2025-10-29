@@ -27,7 +27,7 @@ function Register(){
        }
        catch(error)
        {
-        conso9ole.error("Registration error:",error);
+        console.error("Registration error:",error);
         if(error.response && error.response.data.message)
         {
             alert(error.response.data.message);
