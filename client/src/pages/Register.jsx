@@ -1,75 +1,65 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React,{useState} from "react";
+import {Link,useNavigate} from "react-router-dom";
 import axios from "axios";
 
-function Register() {
-  const [formdata, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    year: "",
-    branch: "",
-  });
+function Register(){
+    const [formdata,setFormData]=useState({
+       name:"",
+       email:"",
+       password:"",
+       year:"",
+       branch:"",
+    });
 
-  const navigate = useNavigate();
+    const navigate=useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formdata, [e.target.name]: e.target.value });
-  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log("Register data:", formdata);
+    const handleSubmit=async(e)=>{
+       e.preventDefault();
+       console.log("Register data:",formdata);
 
-    try {
-      const res =await axios.post("http://localhost:5000/api/users/register", formdata);
+       try{
+        //send data to backend
+        const res=await axios.post("http://localhost:5000/api/users/register",formdata);
 
-      alert(res.data.message);
-      navigate("/login");
-    } catch (error) {
-      console.error("Registration error:", error.response?.data?.message || error.message);
-      alert(error.response?.data?.message || "Something went wrong. Try again!");
-    }
-  };
+        alert(res.data.message);
+        navigate("/login");
+       }
+       catch(error)
+       {
+        conso9ole.error("Registration error:",error);
+        if(error.response && error.response.data.message)
+        {
+            alert(error.response.data.message);
+        }
+        else{
+            alert("Something went wrong.Try again!");
+        }
+       }
+    };
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-700 px-4">
-      <div className="bg-gradient-to-tr from-slate-300 via-slate-200 to-white p-6 sm:p-8 md:p-10 rounded-2xl shadow-lg w-full max-w-md sm:max-w-lg md:max-w-xl">
-        <h2 className="text-center text-3xl sm:text-4xl  mb-6 font-sans font-bold leading-normal">
-          Register
-        </h2>
+    const handleChange=(e)=>{
+              setFormData({...formdata,[e.target.name]: e.target.value});
+    };
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {["name", "email", "password", "year", "branch"].map((field, idx) => (
-            <input
-              key={idx}
-              type={field === "email" ? "email" : field === "password" ? "password" : "text"}
-              name={field}
-              placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-              required
-              value={formdata[field]}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-          ))}
+    return (
+        <div className=" flex items-center justify-center min-h-screen bg-blue-100">
+            <div className="bg-white p-8 rounded shadow-md w-full max-w-sm">
+            <h2 className="text-center text-3xl mt-3 font-bold">Register</h2>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white font-semibold py-2 rounded-xl hover:bg-blue-500 transition duration-200"
-          >
-            Register
-          </button>
-        </form>
+            <form onSubmit={handleSubmit}>
 
-        <p className="mt-4 text-center text-sm text-gray-700">
-          Already have an account?{" "}
-          <Link to="/login" className="text-blue-600 hover:underline">
-            Login here
-          </Link>
-        </p>
-      </div>
-    </div>
-  );
+                <input className="w-full border border-gray-300 rounded py-2 mt-3 pl-2" name="name" placeholder="Name" required onChange={handleChange}></input>
+                <input className="w-full border border-gray-300 rounded py-2 mt-3 pl-2" type="email" name="email" placeholder="Email" required onChange={handleChange}></input>
+                <input className="w-full border border-gray-300 rounded py-2 mt-3 pl-2"type="password" name="password" placeholder="Password" required onChange={handleChange}></input>
+                <input className="w-full border border-gray-300 rounded py-2 mt-3 pl-2"name="year" placeholder="Year(1st,2nd,3rd...)" required onChange={handleChange}></input>
+                <input className="w-full border border-gray-300 rounded py-2 mt-3 pl-2"name="branch" placeholder="Branch(CSE,IT...)" required onChange={handleChange}></input>
+
+                <button className="block text-center mx-auto mt-2 bg-blue-500 text-white p-2 mt-4 rounded-md "type="submit">Register</button>
+            </form>
+            <p className="mt-2 text-center">Already have an account? <Link to="/login" className="text-blue-600">Login here</Link></p>
+        </div>
+        </div>
+    );
 }
-
 export default Register;
