@@ -68,7 +68,9 @@ router.post("/login",async(req,res)=>{
         //create JWT token
         const token=jwt.sign(
             {
-                id:user._id,  // user ID will be available inside token
+                id:user._id, 
+                name:user.name,
+                email:user.email,// user ID will be available inside token
                 role:user.role // you can use this for role-based access
             },
             process.env.JWT_SECRET, // secret key stored in .env
