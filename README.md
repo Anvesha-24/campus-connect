@@ -1,5 +1,5 @@
 # 📱 Campus Connect
-“🚧 This project is under development. Final version coming soon!”
+
 A full-stack MERN app for students to connect, buy/sell items, and help each other on campus.
 
 ---
