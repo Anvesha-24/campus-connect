@@ -5,6 +5,7 @@ function Reviews() {
   const [reviews, setReviews] = useState([]);
   const [form, setForm] = useState({ title: "", content: "" });
   const [loading, setLoading] = useState(false);
+  const[searchTerm,setSearchTerm]=useState("");
 
   // Fetch reviews on mount
   useEffect(() => {
@@ -50,6 +51,11 @@ function Reviews() {
     }
   };
 
+  const filteredReviews=reviews.filter((rev)=>
+  rev.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  rev.content.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-100 via-white to-purple-100 flex justify-center py-12 px-6">
       <div className="w-full max-w-3xl bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-gray-200">
@@ -94,6 +100,14 @@ function Reviews() {
           </button>
         </form>
 
+        <input
+        type="text"
+        placeholder="Search Reviews..."
+        value={searchTerm}
+        onChange={(e)=>setSearchTerm(e.target.value)}
+             className="w-full p-3 mb-6 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 outline-none"
+        />
+
         {/* Reviews List */}
         <h2 className="text-2xl font-bold text-gray-800 mb-5">All Reviews</h2>
         {reviews.length === 0 ? (
@@ -102,7 +116,7 @@ function Reviews() {
           </p>
         ) : (
           <div className="grid gap-4">
-            {reviews.map((rev) => (
+            {filteredReviews.map((rev) => (
               <div
                 key={rev._id}
                 className="p-5 rounded-2xl border shadow-md bg-white hover:shadow-lg transition duration-200"

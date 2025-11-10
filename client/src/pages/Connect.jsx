@@ -5,7 +5,7 @@ function Connect() {
   const [questions, setQuestions] = useState([]);
   const [form, setForm] = useState({ question: "" });
   const [loading, setLoading] = useState(false);
-
+  const [searchTerm, setSearchTerm] = useState("");
   const [answers, setAnswers] = useState({});
   const [answerForm, setAnswerForm] = useState({});
 
@@ -16,6 +16,7 @@ function Connect() {
         const res = await axios.get("http://localhost:5000/api/connect");
         setQuestions(res.data);
 
+        // Fetch answers for each question
         const newAnswers = {};
         for (const q of res.data) {
           const ansRes = await axios.get(
@@ -32,6 +33,7 @@ function Connect() {
     fetchQuestions();
   }, []);
 
+  // Handle input changes
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -40,6 +42,7 @@ function Connect() {
     setAnswerForm({ ...answerForm, [questionId]: text });
   };
 
+  // Submit question
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.question) return;
@@ -62,6 +65,7 @@ function Connect() {
     }
   };
 
+  // Submit answer
   const handleAnswerSubmit = async (questionId) => {
     if (!answerForm[questionId]) return;
 
@@ -85,15 +89,19 @@ function Connect() {
     }
   };
 
+  // ✅ FIXED: Filter logic must return a value
+  const filteredQuestions = questions.filter((q) =>
+    q.question.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="relative min-h-screen w-full bg-gradient-to-br from-blue-200 via-white to-blue-200 overflow-hidden flex justify-center py-10 px-4">
-
       {/* Floating gradient shapes */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse"></div>
       <div className="absolute -top-20 right-20 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-2xl opacity-40 animate-pulse"></div>
 
-      {/* Optional subtle grid overlay */}
+      {/* Subtle grid overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:24px_24px] opacity-10"></div>
 
       {/* Content card */}
@@ -124,17 +132,26 @@ function Connect() {
           </button>
         </form>
 
+        {/* 🔍 Search Bar */}
+        <input
+          type="text"
+          placeholder="Search Questions..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-3 mb-6 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 outline-none"
+        />
+
         {/* List of questions */}
         <h2 className="text-2xl font-bold text-gray-800 mb-5">
           Recent Questions
         </h2>
-        {questions.length === 0 ? (
+        {filteredQuestions.length === 0 ? (
           <p className="text-gray-600 text-center">
-            No questions yet. Be the first to ask!
+            No questions match your search.
           </p>
         ) : (
           <ul className="space-y-6">
-            {questions.map((q) => (
+            {filteredQuestions.map((q) => (
               <li
                 key={q._id}
                 className="p-5 border border-gray-200 rounded-xl shadow-sm bg-gray-50 hover:shadow-md transition"
@@ -175,7 +192,9 @@ function Connect() {
                     type="text"
                     placeholder="Write your answer..."
                     value={answerForm[q._id] || ""}
-                    onChange={(e) => handleAnswerChange(q._id, e.target.value)}
+                    onChange={(e) =>
+                      handleAnswerChange(q._id, e.target.value)
+                    }
                     className="flex-1 p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition"
                   />
                   <button

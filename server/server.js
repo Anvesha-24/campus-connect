@@ -21,9 +21,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // ------------------- STATIC FILES ------------------- //
 // Absolute path for uploads folder in project root
+// ------------------- STATIC FILES ------------------- //
 const pathToUploads = path.join(__dirname, "uploads");
-const itemsUploadPath = path.join(__dirname, "..", "uploads", "items");
-
+const itemsUploadPath = path.join(__dirname, "uploads", "items");
 const materialsUploadPath = path.join(pathToUploads, "materials");
 
 // Ensure folders exist
@@ -37,6 +37,7 @@ app.use("/uploads/materials", express.static(materialsUploadPath));
 
 console.log("Serving items from:", itemsUploadPath);
 console.log("Serving materials from:", materialsUploadPath);
+
 
 // ------------------- ROUTES ------------------- //
 app.use("/api/users", userRouter);
