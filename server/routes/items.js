@@ -1,64 +1,91 @@
 const express = require("express");
 const router = express.Router();
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const Item = require("../models/Item");
-const authMiddleware = require("../middleware/auth");
+const auth = require("../middleware/auth");
+const upload = require("../middleware/upload"); // ✅ import multer
 
-// Use same uploads folder as server.js
-const uploadDir = path.join(__dirname, "..", "..", "uploads", "items");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// 🟢 POST: Add a new item (with image upload)
+router.post("/", auth, upload.single("image"), async (req, res) => {
+  try {
+    const { title, description, price } = req.body;
 
-// Multer config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-  },
+    if (!req.file) {
+      return res.status(400).json({ message: "Image is required" });
+    }
+
+    const newItem = new Item({
+      title,
+      description,
+      price,
+      image: req.file.filename, // ✅ use uploaded filename
+      user: req.user.id,
+    });
+
+    const savedItem = await newItem.save();
+
+    // Return the saved item with full image URL
+    res.status(201).json({
+      ...savedItem._doc,
+      image: `${req.protocol}://${req.get("host")}/uploads/items/${savedItem.image}`,
+    });
+  } catch (err) {
+    console.error("Error adding item:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
-const upload = multer({ storage });
 
-// GET all items
+// 🟢 GET: Fetch all items
 router.get("/", async (req, res) => {
   try {
-    const items = await Item.find().sort({ createdAt: -1 });
+    const items = await Item.find().populate("user", "name").sort({ createdAt: -1 });
+
     const modified = items.map((item) => ({
       ...item._doc,
       image: item.image
         ? `${req.protocol}://${req.get("host")}/uploads/items/${item.image}`
         : null,
     }));
+
     res.json(modified);
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching items:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// POST new item
-router.post("/", authMiddleware, upload.single("image"), async (req, res) => {
-  const { title, description, price } = req.body;
-  if (!req.file) return res.status(400).json({ message: "Image is required" });
-
+// 🟢 GET: Fetch items of the logged-in user
+router.get("/user", auth, async (req, res) => {
   try {
-    const newItem = new Item({
-      title,
-      description,
-      price,
-      image: req.file.filename,
-      user: req.user.id,
-    });
-    await newItem.save();
+    const items = await Item.find({ user: req.user.id }).sort({ createdAt: -1 });
 
-    res.status(201).json({
-      ...newItem._doc,
-      image: `${req.protocol}://${req.get("host")}/uploads/items/${newItem.image}`,
-    });
+    const modified = items.map((item) => ({
+      ...item._doc,
+      image: item.image
+        ? `${req.protocol}://${req.get("host")}/uploads/items/${item.image}`
+        : null,
+    }));
+
+    res.json(modified);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to post item" });
+    console.error("Error fetching user items:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// 🟢 DELETE: Delete an item
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: "Item not found" });
+
+    if (item.user.toString() !== req.user.id)
+      return res.status(401).json({ message: "Not authorized" });
+
+    await item.deleteOne();
+    res.json({ message: "Item deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting item:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
