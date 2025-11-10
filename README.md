@@ -33,13 +33,24 @@ git clone https://github.com/your-username/campus-connect.git
 # Go to the project directory
 cd campus-connect
 
-# For backend setup
-cd backend
+# Install root dependencies
 npm install
-npm run dev
 
-# For frontend setup
-cd ../frontend
+# Install client dependencies
+cd client
 npm install
-npm start
+cd ..
+
+# Install server dependencies
+cd server
+npm install
+cd ..
+
+# Set up environment variables
+# Copy server/.env.example to server/.env and add your MongoDB connection string
+cp server/.env.example server/.env
+# Edit server/.env with your MongoDB Atlas URI
+
+# Run the app (both frontend and backend)
+npm run dev
 
