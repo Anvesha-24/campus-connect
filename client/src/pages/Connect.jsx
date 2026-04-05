@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { MessageSquare, Send, Search, User, MessageCircle, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const API_URL = process.env.REACT_APP_API_URL;
 
 function Connect() {
   const [questions, setQuestions] = useState([]);
@@ -9,205 +13,187 @@ function Connect() {
   const [answers, setAnswers] = useState({});
   const [answerForm, setAnswerForm] = useState({});
 
-  // Fetch all questions on mount
+  // -------------------- FETCH DATA --------------------
   useEffect(() => {
-    const fetchQuestions = async () => {
+    const fetchAllData = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/connect");
+        const res = await axios.get(`${API_URL}/api/connect`);
         setQuestions(res.data);
 
-        // Fetch answers for each question
+        // Optimization: Ideally, your backend should return answers WITH questions.
+        // If not, we fetch them here.
         const newAnswers = {};
-        for (const q of res.data) {
-          const ansRes = await axios.get(
-            `http://localhost:5000/api/answers/${q._id}`
-          );
-          newAnswers[q._id] = ansRes.data;
-        }
+        await Promise.all(res.data.map(async (q) => {
+          try {
+            const ansRes = await axios.get(`${API_URL}/api/answers/${q._id}`);
+            newAnswers[q._id] = ansRes.data;
+          } catch (e) {
+            newAnswers[q._id] = [];
+          }
+        }));
         setAnswers(newAnswers);
       } catch (err) {
         console.error("Failed to fetch questions:", err);
-        alert("Failed to load questions");
       }
     };
-    fetchQuestions();
+    fetchAllData();
   }, []);
 
-  // Handle input changes
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleAnswerChange = (questionId, text) => {
-    setAnswerForm({ ...answerForm, [questionId]: text });
-  };
-
-  // Submit question
+  // -------------------- HANDLERS --------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.question) return;
+    if (!form.question.trim()) return;
 
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/connect", form, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const res = await axios.post(`${API_URL}/api/connect`, form);
       setQuestions([res.data, ...questions]);
       setForm({ question: "" });
-      alert("Question posted!");
     } catch (err) {
-      console.error("Submit error:", err);
-      alert("Failed to post question");
+      alert("Failed to post question. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Submit answer
   const handleAnswerSubmit = async (questionId) => {
-    if (!answerForm[questionId]) return;
+    const text = answerForm[questionId];
+    if (!text?.trim()) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `http://localhost:5000/api/answers/${questionId}`,
-        { text: answerForm[questionId] },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      const res = await axios.post(`${API_URL}/api/answers/${questionId}`, { text });
       setAnswers({
         ...answers,
         [questionId]: [res.data, ...(answers[questionId] || [])],
       });
-
       setAnswerForm({ ...answerForm, [questionId]: "" });
     } catch (err) {
-      console.error(err);
       alert("Failed to post answer");
     }
   };
 
-  // ✅ FIXED: Filter logic must return a value
   const filteredQuestions = questions.filter((q) =>
     q.question.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="relative min-h-screen w-full bg-gradient-to-br from-blue-200 via-white to-blue-200 overflow-hidden flex justify-center py-10 px-4">
-      {/* Floating gradient shapes */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse"></div>
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse"></div>
-      <div className="absolute -top-20 right-20 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-2xl opacity-40 animate-pulse"></div>
+    <div className="min-h-screen bg-slate-950 text-white py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-black mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+            Senior-Junior Hub
+          </h1>
+          <p className="text-slate-400 font-medium italic">"The only dumb question is the one you don't ask."</p>
+        </div>
 
-      {/* Subtle grid overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:24px_24px] opacity-10"></div>
+        {/* Ask Question Form */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-slate-900 border border-slate-800 p-6 rounded-3xl mb-12 shadow-2xl"
+        >
+          <div className="flex items-center gap-2 mb-4 text-blue-400">
+            <MessageSquare size={20} />
+            <h2 className="font-bold uppercase tracking-widest text-xs">New Inquiry</h2>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <textarea
+              name="question"
+              placeholder="E.g., How do I prepare for the Google internship interview?"
+              value={form.question}
+              onChange={(e) => setForm({ question: e.target.value })}
+              className="w-full p-4 bg-slate-800 border border-slate-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none min-h-[100px]"
+              required
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            >
+              {loading ? "Posting..." : <><Send size={18} /> Broadcast Question</>}
+            </button>
+          </form>
+        </motion.div>
 
-      {/* Content card */}
-      <div className="relative z-10 w-full max-w-3xl bg-white p-8 rounded-2xl shadow-2xl border border-gray-100">
-        <h1 className="text-4xl font-extrabold text-blue-700 text-center mb-8">
-          Connect with Seniors 💬
-        </h1>
-
-        {/* Post a question */}
-        <form onSubmit={handleSubmit} className="mb-8 space-y-4">
-          <textarea
-            name="question"
-            placeholder="Ask your question here..."
-            value={form.question}
-            onChange={handleChange}
-            className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition resize-none"
-            rows={3}
-            required
+        {/* Search */}
+        <div className="relative mb-10">
+          <Search className="absolute left-4 top-4 text-slate-500" size={20} />
+          <input
+            type="text"
+            placeholder="Search discussions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-800 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
           />
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold shadow-md transition transform hover:scale-[1.01] ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            {loading ? "Posting..." : "➕ Post Question"}
-          </button>
-        </form>
+        </div>
 
-        {/* 🔍 Search Bar */}
-        <input
-          type="text"
-          placeholder="Search Questions..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-3 mb-6 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 outline-none"
-        />
-
-        {/* List of questions */}
-        <h2 className="text-2xl font-bold text-gray-800 mb-5">
-          Recent Questions
-        </h2>
-        {filteredQuestions.length === 0 ? (
-          <p className="text-gray-600 text-center">
-            No questions match your search.
-          </p>
-        ) : (
-          <ul className="space-y-6">
+        {/* Questions List */}
+        <div className="space-y-8">
+          <AnimatePresence>
             {filteredQuestions.map((q) => (
-              <li
+              <motion.div
                 key={q._id}
-                className="p-5 border border-gray-200 rounded-xl shadow-sm bg-gray-50 hover:shadow-md transition"
+                layout
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden"
               >
-                <p className="text-lg text-gray-900 font-medium">
-                  {q.question}
-                </p>
-                <p className="text-gray-500 text-sm mt-1">
-                  Posted by{" "}
-                  <span className="font-semibold">
-                    {q.userName || "Anonymous"}
-                  </span>
-                </p>
-
-                {/* Existing answers */}
-                <div className="mt-4 space-y-2 max-h-32 overflow-y-auto pr-2">
-                  {answers[q._id]?.length > 0 ? (
-                    answers[q._id].map((a) => (
-                      <div
-                        key={a._id}
-                        className="p-2 rounded-md bg-green-50 border border-green-100"
-                      >
-                        <p className="text-sm text-green-800">
-                          <strong>{a.userName}:</strong> {a.text}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-400 text-sm italic">
-                      No answers yet.
-                    </p>
-                  )}
+                <div className="p-6 pb-4 border-b border-slate-800/50">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-indigo-600/20 rounded-full flex items-center justify-center text-indigo-400">
+                      <User size={20} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-300">{q.userName || "Student"}</p>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-tighter">Question Thread</p>
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-white leading-tight">{q.question}</h3>
                 </div>
 
-                {/* Answer input */}
-                <div className="mt-4 flex gap-3">
-                  <input
-                    type="text"
-                    placeholder="Write your answer..."
-                    value={answerForm[q._id] || ""}
-                    onChange={(e) =>
-                      handleAnswerChange(q._id, e.target.value)
-                    }
-                    className="flex-1 p-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition"
-                  />
-                  <button
-                    onClick={() => handleAnswerSubmit(q._id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-xl font-semibold shadow-md transition transform hover:scale-105"
-                  >
-                    Reply
-                  </button>
+                {/* Answers Section */}
+                <div className="p-6 bg-slate-900/50">
+                  <div className="space-y-4 mb-6 max-h-60 overflow-y-auto custom-scrollbar">
+                    {answers[q._id]?.length > 0 ? (
+                      answers[q._id].map((a) => (
+                        <div key={a._id} className="flex gap-3">
+                          <ChevronRight size={16} className="mt-1 text-blue-500 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm text-slate-300">
+                              <span className="font-bold text-blue-400 mr-2">{a.userName}:</span>
+                              {a.text}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-slate-600 text-sm italic">Waiting for a senior's wisdom...</p>
+                    )}
+                  </div>
+
+                  {/* Reply Box */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Share your advice..."
+                      value={answerForm[q._id] || ""}
+                      onChange={(e) => setAnswerForm({ ...answerForm, [q._id]: e.target.value })}
+                      className="flex-1 p-3 bg-slate-800 border border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                    <button
+                      onClick={() => handleAnswerSubmit(q._id)}
+                      className="bg-indigo-600 hover:bg-indigo-500 p-3 rounded-xl transition-colors"
+                    >
+                      <MessageCircle size={18} />
+                    </button>
+                  </div>
                 </div>
-              </li>
+              </motion.div>
             ))}
-          </ul>
-        )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
