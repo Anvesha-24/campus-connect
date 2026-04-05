@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
@@ -12,52 +11,73 @@ import BuySell from "./pages/BuySell";
 import Material from "./pages/Material";
 import Connect from "./pages/Connect";
 import Reviews from "./pages/Reviews";
-import Items from "./pages/Items"; // Items page
+import Items from "./pages/Items";
 
 // ------------------ Components -----------------
 import Layout from "./components/Layout";
 import PrivateRoute from "./components/PrivateRoute";
 
+// Set the base URL for all axios requests from your environment variables
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 function App() {
-  // Setup axios Authorization header if token exists & valid
+  
+  // -------------------- GLOBAL AUTH CONFIG --------------------
   useEffect(() => {
+    // 1. Initial check for existing token
     const token = localStorage.getItem("token");
     if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        const isExpired = payload.exp * 1000 < Date.now();
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
 
-        if (isExpired) {
-          console.log("Token expired. Logging out...");
+    // 2. Request Interceptor: Sync token with every outgoing request
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const latestToken = localStorage.getItem("token");
+        if (latestToken) {
+          config.headers.Authorization = `Bearer ${latestToken}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // 3. Response Interceptor: Handle Global 401 (Unauthorized)
+    // If the backend says the token is invalid/expired, log the user out automatically
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-          delete axios.defaults.headers.common["Authorization"];
-        } else {
-          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          window.location.href = "/login"; // Force redirect on session expiry
         }
-      } catch (err) {
-        console.error("Invalid token format. Clearing storage...");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        delete axios.defaults.headers.common["Authorization"];
+        return Promise.reject(error);
       }
-    }
+    );
+
+    // Cleanup interceptors on unmount
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
+    };
   }, []);
 
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
+        {/* --- AUTH ROUTES (No Navbar/Footer) --- */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Routes wrapped inside Layout */}
+        {/* --- MAIN APP ROUTES (Wrapped in Layout) --- */}
         <Route element={<Layout />}>
-          {/* Default landing page */}
+          
+          {/* Public Landing Pages */}
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
 
-          {/* Protected Routes */}
+          {/* Protected Campus Features */}
           <Route
             path="/dashboard"
             element={
@@ -107,8 +127,8 @@ function App() {
             }
           />
 
-          {/* Catch-all: redirect unknown routes to Home */}
-          <Route path="*" element={<Navigate to="/" />} />
+          {/* 404 Redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </Router>

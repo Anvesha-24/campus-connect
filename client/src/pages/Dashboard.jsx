@@ -2,12 +2,21 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
+// Use the environment variable from your .env file
+const API_URL = process.env.REACT_APP_API_URL;
+
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [latestUpdates, setLatestUpdates] = useState([]);
   const [userItems, setUserItems] = useState([]);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+
+  // Helper function for image URLs
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "/default-avatar.png";
+    return imagePath.startsWith("http") ? imagePath : `${API_URL}/${imagePath}`;
+  };
 
   // -------------------- FETCH USER PROFILE --------------------
   useEffect(() => {
@@ -19,13 +28,12 @@ function Dashboard() {
 
     const fetchUser = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/users/profile", {
+        const res = await axios.get(`${API_URL}/api/users/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(res.data.user);
       } catch (err) {
         console.error("Profile fetch failed:", err);
-        alert("Session expired. Please login again.");
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         navigate("/login");
@@ -38,17 +46,12 @@ function Dashboard() {
   // -------------------- FETCH LATEST UPDATES --------------------
   useEffect(() => {
     const fetchUpdates = async () => {
+      if (!token) return;
       try {
         const [materialsRes, itemsRes, connectRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/materials", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:5000/api/items", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:5000/api/connect", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          axios.get(`${API_URL}/api/materials`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/items`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/connect`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
         const updates = [
@@ -61,7 +64,7 @@ function Dashboard() {
             createdAt: i.createdAt,
           })),
           ...connectRes.data.map((c) => ({
-            text: `🎓 New post by ${c.postedBy?.name || "Anonymous"}: ${c.title || c.content}`,
+            text: `🎓 New post: ${c.question || c.content || "Question posted"}`,
             createdAt: c.createdAt,
           })),
         ];
@@ -80,7 +83,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchUserItems = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/items/user", {
+        const res = await axios.get(`${API_URL}/api/items/user`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUserItems(res.data);
@@ -104,7 +107,7 @@ function Dashboard() {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/items/${id}`, {
+      await axios.delete(`${API_URL}/api/items/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -117,7 +120,7 @@ function Dashboard() {
   };
 
   if (!user) {
-    return <div className="text-center mt-10 text-lg">Loading...</div>;
+    return <div className="text-center mt-10 text-lg text-white">Loading...</div>;
   }
 
   return (
@@ -127,9 +130,9 @@ function Dashboard() {
         {/* Profile Section */}
         <div className="flex items-center gap-6 bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-lg">
           <img
-            src={user?.avatar || "/default-avatar.png"}
+            src={getImageUrl(user?.avatar)}
             alt="Profile"
-            className="w-20 h-20 rounded-full border-4 border-blue-500 object-cover"
+            className="w-20 h-20 rounded-full border-4 border-blue-500 object-cover bg-slate-700"
           />
           <div>
             <h1 className="text-2xl font-bold text-white">
@@ -141,66 +144,70 @@ function Dashboard() {
 
         {/* Quick Links */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <Link to="/buy-sell" className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-md hover:shadow-lg hover:bg-white/20 transition">
-            <h2 className="text-xl font-semibold text-blue-400">Buy/Sell Items</h2>
+          <Link to="/buy-sell" className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-md hover:shadow-lg hover:bg-white/20 transition group">
+            <h2 className="text-xl font-semibold text-blue-400 group-hover:text-blue-300 transition">Buy/Sell Items</h2>
             <p className="text-slate-300">Browse or post products to exchange on Campus</p>
           </Link>
 
-          <Link to="/materials" className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-md hover:shadow-lg hover:bg-white/20 transition">
-            <h2 className="text-xl font-semibold text-blue-400">Study Material</h2>
+          <Link to="/materials" className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-md hover:shadow-lg hover:bg-white/20 transition group">
+            <h2 className="text-xl font-semibold text-blue-400 group-hover:text-blue-300 transition">Study Material</h2>
             <p className="text-slate-300">Share and access important notes and PYQ's</p>
           </Link>
 
-          <Link to="/connect" className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-md hover:shadow-lg hover:bg-white/20 transition">
-            <h2 className="text-xl font-semibold text-blue-400">Connect with Seniors</h2>
+          <Link to="/connect" className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-md hover:shadow-lg hover:bg-white/20 transition group">
+            <h2 className="text-xl font-semibold text-blue-400 group-hover:text-blue-300 transition">Connect with Seniors</h2>
             <p className="text-slate-300">Ask questions, seek help or career guidance</p>
           </Link>
 
-          <Link to="/reviews" className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-md hover:shadow-lg hover:bg-white/20 transition">
-            <h2 className="text-xl font-semibold text-blue-400">Reviews</h2>
+          <Link to="/reviews" className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-md hover:shadow-lg hover:bg-white/20 transition group">
+            <h2 className="text-xl font-semibold text-blue-400 group-hover:text-blue-300 transition">Reviews</h2>
             <p className="text-slate-300">Read and post reviews for subjects or faculty</p>
           </Link>
         </div>
 
         {/* Latest Updates */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-lg">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/5">
           <h3 className="text-xl font-bold text-white mb-4">Latest Updates</h3>
-          <ul className="space-y-2 text-slate-300">
+          <ul className="space-y-3 text-slate-300">
             {latestUpdates.length === 0 ? (
-              <li className="text-gray-400">No updates yet.</li>
+              <li className="text-gray-400 italic">No updates yet.</li>
             ) : (
               latestUpdates.map((u, idx) => (
-                <li key={idx} className="border-b border-slate-600 pb-2">{u.text}</li>
+                <li key={idx} className="border-b border-slate-600/50 pb-2 flex items-start gap-2">
+                  <span className="text-sm">{u.text}</span>
+                </li>
               ))
             )}
           </ul>
         </div>
 
         {/* User's Posted Items */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-lg">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/5">
           <h3 className="text-xl font-bold text-white mb-4">Your Posted Items</h3>
 
           {userItems.length === 0 ? (
-            <p className="text-gray-400">You haven't posted any items yet.</p>
+            <p className="text-gray-400 italic">You haven't posted any items yet.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {userItems.map((item) => (
-                <div key={item._id} className="bg-white rounded-lg p-4 shadow-md">
-                  <h4 className="font-semibold text-indigo-800">{item.title}</h4>
-                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
-                  <p className="font-semibold text-green-600">₹{item.price}</p>
+                <div key={item._id} className="bg-white rounded-lg p-4 shadow-md flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-bold text-indigo-900 text-lg mb-1">{item.title}</h4>
+                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
+                    <p className="font-bold text-green-600 text-lg mb-3">₹{item.price}</p>
 
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-full h-40 object-contain mt-2 rounded"
-                    />
-                  )}
+                    {item.image && (
+                      <img
+                        src={getImageUrl(item.image)}
+                        alt={item.title}
+                        className="w-full h-40 object-contain mt-2 rounded bg-gray-50 border"
+                      />
+                    )}
+                  </div>
 
                   <button
                     onClick={() => handleDelete(item._id)}
-                    className="mt-3 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                    className="mt-4 w-full bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition shadow-sm"
                   >
                     Mark as Sold / Delete
                   </button>
@@ -211,10 +218,10 @@ function Dashboard() {
         </div>
 
         {/* Logout Button */}
-        <div className="text-center">
+        <div className="text-center pb-10">
           <button
             onClick={handleLogout}
-            className="mt-6 bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition"
+            className="bg-indigo-600 text-white px-10 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg transform hover:scale-105"
           >
             Logout
           </button>
