@@ -1,44 +1,3 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const path = require("path");
-require("dotenv").config();
-
-const userRouter = require("./routes/userRoutes");
-const itemsRouter = require("./routes/items");
-const materialsRouter = require("./routes/materialRoutes");
-const connectRoutes = require("./routes/connectRoutes");
-const answerRouter = require("./routes/answerRoutes");
-const reviewRoutes = require("./routes/reviewRoutes");
-
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// ------------------- STATIC FILES ------------------- //
-// Absolute path for uploads folder in project root
-// ------------------- STATIC FILES ------------------- //
-const pathToUploads = path.join(__dirname, "uploads");
-const itemsUploadPath = path.join(__dirname, "uploads", "items");
-const materialsUploadPath = path.join(pathToUploads, "materials");
-
-// Ensure folders exist
-const fs = require("fs");
-if (!fs.existsSync(itemsUploadPath)) fs.mkdirSync(itemsUploadPath, { recursive: true });
-if (!fs.existsSync(materialsUploadPath)) fs.mkdirSync(materialsUploadPath, { recursive: true });
-
-// Serve static files
-app.use("/uploads/items", express.static(itemsUploadPath));
-app.use("/uploads/materials", express.static(materialsUploadPath));
-
-console.log("Serving items from:", itemsUploadPath);
-console.log("Serving materials from:", materialsUploadPath);
-
-
 // ------------------- ROUTES ------------------- //
 app.use("/api/users", userRouter);
 app.use("/api/items", itemsRouter);
@@ -46,6 +5,11 @@ app.use("/api/materials", materialsRouter);
 app.use("/api/connect", connectRoutes);
 app.use("/api/answers", answerRouter);
 app.use("/api/reviews", reviewRoutes);
+
+// NEW: Add a specific Root Route for Render's Health Check
+app.get("/", (req, res) => {
+  res.status(200).send("Campus Connect API is Live!");
+});
 
 // 404 handler
 app.use((req, res) => res.status(404).json({ message: "Route not found" }));
@@ -58,9 +22,17 @@ app.use((err, req, res, next) => {
 
 // MongoDB connection
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB connected successfully");
+    // ONLY ONE LISTEN COMMAND HERE
+    app.listen(PORT, "0.0.0.0", () =>
+      console.log(`🚀 Server running on port ${PORT}`)
+    );
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection failed:", err.message);
+    process.exit(1); 
+  });
 
-// Start server
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// REMOVED: The extra app.listen that was at the very bottom
