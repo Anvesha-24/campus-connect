@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-// Helper to handle the API URL from your .env file
 const API_URL = process.env.REACT_APP_API_URL;
 
 function BuySell() {
@@ -17,7 +16,6 @@ function BuySell() {
 
   const token = localStorage.getItem("token");
 
-  // Fetch all products using the environment variable
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -54,14 +52,12 @@ function BuySell() {
     formData.append("image", imageFile);
 
     try {
-      // POST request updated to use environment variable
       const res = await axios.post(`${API_URL}/api/items`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       });
-
       setProducts([res.data, ...products]);
       setForm({ title: "", description: "", price: "" });
       setImageFile(null);
@@ -74,10 +70,6 @@ function BuySell() {
     }
   };
 
-  const handleInterested = (id) => {
-    alert(`You showed interest in product ${id}`);
-  };
-
   const filteredProducts = products.filter(
     (p) => p.title && p.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -87,142 +79,154 @@ function BuySell() {
   const currentProducts = filteredProducts.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
-  const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-  const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-
-  // Helper function to build the correct image URL
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
-    // If it's already a full URL (like from a cloud provider), use it. 
-    // Otherwise, prefix it with your Render Backend URL.
     return imagePath.startsWith("http") ? imagePath : `${API_URL}/${imagePath}`;
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="fixed inset-0 -z-20 bg-gradient-to-br from-blue-50 to-indigo-100"></div>
-      
-      {/* Background Blobs & Grid */}
-      <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-gradient-to-r from-blue-200 to-indigo-200 rounded-full filter blur-3xl opacity-50 animate-blob"></div>
-      <div className="absolute top-40 -right-40 w-[700px] h-[700px] bg-gradient-to-r from-purple-200 to-pink-200 rounded-full filter blur-3xl opacity-40 animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-cyan-200 to-teal-200 rounded-full filter blur-3xl opacity-40 animate-blob animation-delay-4000"></div>
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] opacity-10 -z-10"></div>
-      
-      <div className="p-6 min-h-screen relative z-10">
-        <h1 className="text-4xl font-bold mb-6 text-center text-indigo-800">Campus Marketplace</h1>
-        
-        <div className="flex justify-center mb-6">
+    <div className="relative min-h-screen bg-slate-50 font-sans text-slate-900">
+      {/* Refined Mesh Background */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-100/50 blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-100/50 blur-[120px]"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-12 relative z-10">
+        {/* Header Section */}
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-extrabold tracking-tight text-slate-900 mb-4">
+            Campus <span className="text-indigo-600">Marketplace</span>
+          </h1>
+          <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+            The trusted hub to buy, sell, and trade essentials with fellow students.
+          </p>
+          
           <button 
             onClick={() => setShowForm(!showForm)}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md"
+            className={`mt-8 px-8 py-3 rounded-full font-bold transition-all transform hover:scale-105 shadow-lg ${
+              showForm ? "bg-rose-500 text-white" : "bg-indigo-600 text-white hover:bg-indigo-700"
+            }`}
           >
-            {showForm ? "Cancel" : "Sell an Item"}
+            {showForm ? "Close Form" : "List Your Item"}
           </button>
         </div>
 
-        {/* Form Section */}
+        {/* Listing Form */}
         {showForm && (
-          <div className="mb-8 p-6 rounded-2xl shadow-lg bg-white bg-opacity-90 backdrop-blur-sm border border-indigo-100 max-w-2xl mx-auto">
-            <h2 className="text-2xl font-semibold mb-4 text-indigo-800">List a New Item</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input type="text" name="title" value={form.title} onChange={handleChange} placeholder="Title" className="w-full px-4 py-2 border rounded-lg" />
-              <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description" rows="3" className="w-full px-4 py-2 border rounded-lg" />
-              <input type="number" name="price" value={form.price} onChange={handleChange} placeholder="Price (₹)" className="w-full px-4 py-2 border rounded-lg" />
+          <div className="mb-16 bg-white rounded-3xl shadow-2xl border border-slate-100 p-8 max-w-2xl mx-auto animate-in fade-in zoom-in duration-300">
+            <h2 className="text-2xl font-bold mb-6">Create New Listing</h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <input type="text" name="title" value={form.title} onChange={handleChange} placeholder="What are you selling?" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              <textarea name="description" value={form.description} onChange={handleChange} placeholder="Tell us more about it..." rows="3" className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              <div className="relative">
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                <input type="number" name="price" value={form.price} onChange={handleChange} placeholder="Price" className="w-full pl-10 pr-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+              </div>
               
-              <div className="flex items-center space-x-4">
-                <label className="cursor-pointer bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg">
-                  Choose Image
+              <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                <span className="text-sm font-medium text-indigo-700">Item Image</span>
+                <label className="cursor-pointer bg-white text-indigo-600 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-indigo-600 hover:text-white transition-all">
+                  Upload Photo
                   <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                 </label>
-                {previewImage && <span className="text-green-600 text-sm">Selected!</span>}
               </div>
 
               {previewImage && (
-                <div className="w-full h-48 bg-gray-100 rounded-lg overflow-hidden border">
-                  <img src={previewImage} alt="Preview" className="object-contain w-full h-full" />
+                <div className="relative w-full h-48 rounded-2xl overflow-hidden border-2 border-indigo-200">
+                  <img src={previewImage} alt="Preview" className="object-cover w-full h-full" />
                 </div>
               )}
-              <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 shadow-md">Post Item</button>
+              
+              <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200">
+                Launch Listing
+              </button>
             </form>
           </div>
         )}
 
-        {/* Search */}
-        <div className="relative max-w-xl mx-auto mb-8">
-            <input
-              type="text"
-              placeholder="Search items..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full border border-gray-300 pl-12 pr-4 py-3 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-            />
+        {/* Search Bar */}
+        <div className="relative max-w-2xl mx-auto mb-16">
+          <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          </div>
+          <input
+            type="text"
+            placeholder="Search items by name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-14 pr-6 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-lg"
+          />
         </div>
 
         {/* Products Grid */}
-        <div className="flex justify-center">
-          {currentProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {currentProducts.map((item) => (
-                <div key={item._id} className="border border-gray-200 rounded-2xl shadow-md bg-white bg-opacity-90 backdrop-blur-sm overflow-hidden transition-transform hover:scale-[1.02]">
-                  {item.image && (
-                    <div 
-                      className="w-full h-48 flex items-center justify-center bg-gray-100 cursor-pointer"
-                      onClick={() => setSelectedImage(getImageUrl(item.image))}
-                    >
-                      <img
-                        src={getImageUrl(item.image)}
-                        alt={item.title}
-                        className="object-contain w-full h-full"
-                      />
-                    </div>
-                  )}
-
-                  <div className="p-4 flex flex-col">
-                    <h3 className="font-bold text-lg text-indigo-800 mb-2">{item.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">{item.description}</p>
-                    <div className="mt-auto">
-                      <p className="text-green-600 font-semibold text-lg">₹{item.price}</p>
-                      <button
-                        onClick={() => handleInterested(item._id)}
-                        className="mt-3 w-full bg-indigo-100 text-indigo-700 py-2 rounded-lg font-medium hover:bg-indigo-200"
-                      >
-                        I'm Interested
-                      </button>
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          {currentProducts.map((item) => (
+            <div key={item._id} className="group bg-white rounded-[2rem] overflow-hidden border border-slate-100 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 flex flex-col">
+              {item.image && (
+                <div className="h-64 overflow-hidden bg-slate-100 relative">
+                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-600 z-10 shadow-sm">
+                    Student Verified
                   </div>
+                  <img
+                    src={getImageUrl(item.image)}
+                    alt={item.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-zoom-in"
+                    onClick={() => setSelectedImage(getImageUrl(item.image))}
+                  />
                 </div>
-              ))}
+              )}
+              <div className="p-8 flex flex-col flex-grow">
+                <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">{item.title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6 line-clamp-3">
+                  {item.description}
+                </p>
+                <div className="mt-auto flex items-center justify-between pt-6 border-t border-slate-50">
+                  <div>
+                    <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Price</span>
+                    <p className="text-2xl font-black text-emerald-600">₹{item.price}</p>
+                  </div>
+                  <button
+                    onClick={() => alert(`Interested in ${item.title}`)}
+                    className="bg-slate-900 text-white px-5 py-3 rounded-xl text-sm font-bold hover:bg-indigo-600 transition-all shadow-md"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-12 text-gray-500">No items found.</div>
-          )}
+          ))}
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-4 mt-8">
-            <button onClick={handlePrev} disabled={currentPage === 1} className="px-4 py-2 bg-indigo-100 rounded-lg disabled:opacity-50">Prev</button>
-            <span className="flex items-center text-indigo-700">Page {currentPage} of {totalPages}</span>
-            <button onClick={handleNext} disabled={currentPage === totalPages} className="px-4 py-2 bg-indigo-100 rounded-lg disabled:opacity-50">Next</button>
+        {/* Empty State */}
+        {currentProducts.length === 0 && (
+          <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+            <p className="text-slate-400 text-xl font-medium">No items found matching your search.</p>
           </div>
         )}
 
-        {/* Modal for full image */}
-        {selectedImage && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50" onClick={() => setSelectedImage(null)}>
-            <div className="relative max-w-4xl max-h-full">
-              <img src={selectedImage} alt="Full View" className="max-h-[85vh] max-w-[90vw] rounded-lg shadow-lg" />
-            </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center space-x-4 mt-20">
+            <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1} className="p-3 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-slate-50 transition-all">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <span className="font-bold text-slate-600">
+              {currentPage} <span className="text-slate-300 mx-2">/</span> {totalPages}
+            </span>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages} className="p-3 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-slate-50 transition-all">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
           </div>
         )}
       </div>
 
-      <style>{`
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-        @keyframes blob { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        .animate-blob { animation: blob 10s infinite; }
-        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-      `}</style>
+      {/* Image Modal */}
+      {selectedImage && (
+        <div className="fixed inset-0 flex items-center justify-center bg-slate-900/90 backdrop-blur-md z-[100] p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
+          <img src={selectedImage} alt="Full View" className="max-h-full max-w-full rounded-2xl shadow-2xl border-4 border-white/10" />
+        </div>
+      )}
     </div>
   );
 }
