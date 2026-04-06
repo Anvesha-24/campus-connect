@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-// Use the 'Icon' suffix—this is the most stable export across versions
-import { GithubIcon, LinkedinIcon, TwitterIcon, MailIcon } from "lucide-react"; 
+import * as Lucide from "lucide-react"; // Import EVERYTHING as 'Lucide'
 
 export default function Footer() {
   return (
@@ -16,17 +15,18 @@ export default function Footer() {
         </p>
 
         <div className="flex justify-center space-x-8 mb-8">
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white hover:scale-110 transition-all">
-            <GithubIcon size={24} /> {/* Updated to GithubIcon */}
+          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white hover:scale-110 transition-all duration-200">
+            {/* We use Lucide.Github - if this fails, try Lucide.GithubIcon below */}
+            <Lucide.Github size={24} /> 
           </a>
-          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 hover:scale-110 transition-all">
-            <LinkedinIcon size={24} /> {/* Updated to LinkedinIcon */}
+          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 hover:scale-110 transition-all duration-200">
+            <Lucide.Linkedin size={24} />
           </a>
-          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-sky-400 hover:scale-110 transition-all">
-            <TwitterIcon size={24} /> {/* Updated to TwitterIcon */}
+          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-sky-400 hover:scale-110 transition-all duration-200">
+            <Lucide.Twitter size={24} />
           </a>
-          <a href="mailto:support@campusconnect.com" className="text-gray-400 hover:text-red-400 hover:scale-110 transition-all">
-            <MailIcon size={24} /> {/* Updated to MailIcon */}
+          <a href="mailto:support@campusconnect.com" className="text-gray-400 hover:text-red-400 hover:scale-110 transition-all duration-200">
+            <Lucide.Mail size={24} />
           </a>
         </div>
 
