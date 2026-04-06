@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Github, Linkedin, Twitter, Mail } from "lucide-react";
+import { GitHub, Linkedin, Twitter, Mail } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -23,7 +23,7 @@ export default function Footer() {
             rel="noopener noreferrer" 
             className="text-gray-400 hover:text-white hover:scale-110 transition-all duration-200"
           >
-            <Github size={24} />
+            <GitHub size={24} />
           </a>
           <a 
             href="https://linkedin.com" 
