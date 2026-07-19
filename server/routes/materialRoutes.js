@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const Material = require("../models/Material");
 const authMiddleware = require("../middleware/auth");
+const { generateEmbedding } = require("../utils/embeddings");
 
 // ------------------- UPLOAD FOLDER -------------------
 const uploadDir = path.join(__dirname, "..", "uploads", "materials");
@@ -63,11 +64,14 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req, res) =
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    const embedding = await generateEmbedding(`${subject}. ${description}`);
+
     const material = new Material({
       subject,
       description,
       fileUrl: req.file.filename,
       uploadedBy: req.user.id,
+      ...(embedding && { embedding }),
     });
 
     await material.save();

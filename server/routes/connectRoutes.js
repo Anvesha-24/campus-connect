@@ -1,6 +1,7 @@
 const express=require("express")
 const Question=require("../models/Question");
 const authMiddleware=require("../middleware/auth");  //jwt auth
+const { generateEmbedding } = require("../utils/embeddings");
 
 const router=express.Router();
 
@@ -19,10 +20,13 @@ res.status(500).json({message:"Failed to fetch questions"});
 
 router.post("/",authMiddleware,async(req,res)=>{
     try{
+        const embedding = await generateEmbedding(req.body.question);
+
         const newQuestion=new Question({
             question:req.body.question,
             userId:req.user.id,
             userName:req.user.name,
+            ...(embedding && { embedding }),
 
         });
         await newQuestion.save();

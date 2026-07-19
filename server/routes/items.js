@@ -3,6 +3,7 @@ const router = express.Router();
 const Item = require("../models/Item");
 const auth = require("../middleware/auth");
 const upload = require("../middleware/upload"); // ✅ import multer
+const { generateEmbedding } = require("../utils/embeddings");
 
 // 🟢 POST: Add a new item (with image upload)
 router.post("/", auth, upload.single("image"), async (req, res) => {
@@ -13,12 +14,19 @@ router.post("/", auth, upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "Image is required" });
     }
 
+    // Generate a semantic embedding from title+description so this item is
+    // findable via meaning, not just exact keyword matches (see /api/search).
+    // If the embedding call fails (rate limit, no token, etc.) we still save
+    // the item — embedding is an enhancement, not a hard requirement.
+    const embedding = await generateEmbedding(`${title}. ${description}`);
+
     const newItem = new Item({
       title,
       description,
       price,
       image: req.file.filename, // ✅ use uploaded filename
       user: req.user.id,
+      ...(embedding && { embedding }),
     });
 
     const savedItem = await newItem.save();

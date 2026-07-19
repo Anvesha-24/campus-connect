@@ -16,9 +16,18 @@ const materialsRouter = require("./routes/materialRoutes");
 const connectRoutes = require("./routes/connectRoutes");
 const answerRouter = require("./routes/answerRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const searchRoutes = require("./routes/searchRoutes");
+const ragRoutes = require("./routes/ragRoutes");
 
 // 3. Middleware
-app.use(cors());
+// Restrict CORS to your actual frontend origin(s) instead of allowing every site.
+// Set CLIENT_URL in .env to your deployed frontend URL (and add localhost for dev).
+const allowedOrigins = [process.env.CLIENT_URL, "http://localhost:3000"].filter(Boolean);
+app.use(
+  cors({
+    origin: allowedOrigins,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -47,6 +56,8 @@ app.use("/api/materials", materialsRouter);
 app.use("/api/connect", connectRoutes);
 app.use("/api/answers", answerRouter);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/rag", ragRoutes);
 
 // 6. Error Handling
 app.use((req, res) => res.status(404).json({ message: "Route not found" }));

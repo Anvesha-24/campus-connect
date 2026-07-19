@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+﻿const mongoose = require("mongoose");
 
 const materialSchema = new mongoose.Schema(
   {
@@ -6,6 +6,11 @@ const materialSchema = new mongoose.Schema(
     description: { type: String, required: true },
     fileUrl: { type: String, required: true },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    embedding: {
+      type: [Number],
+      default: undefined,
+      select: false,
+    },
   },
   { timestamps: true }
 );

@@ -32,6 +32,11 @@ const itemSchema = new mongoose.Schema(
       ref:"User",  //interested user
     },
   ],
+    embedding: {
+      type: [Number], // 384-dim sentence embedding for semantic search, generated from title+description
+      default: undefined,
+      select: false, // don't send this to the client by default, it's large and internal-only
+    },
   },
   {
     timestamps: true, // automatically adds createdAt and updatedAt
