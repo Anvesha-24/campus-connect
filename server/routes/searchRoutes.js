@@ -1,4 +1,4 @@
-// server/routes/searchRoutes.js
+﻿// server/routes/searchRoutes.js
 //
 // GET /api/search?q=...&type=all|items|materials|questions&limit=10
 //
@@ -16,9 +16,9 @@ const { rankBySimilarity } = require("../utils/similarity");
 
 const router = express.Router();
 
-// Minimum similarity score to bother returning — filters out noise when
+// Minimum similarity score to bother returning â€” filters out noise when
 // nothing in the DB is actually relevant to the query.
-const RELEVANCE_THRESHOLD = 0.35;
+const RELEVANCE_THRESHOLD = 0.3;
 
 router.get("/", async (req, res) => {
   try {
