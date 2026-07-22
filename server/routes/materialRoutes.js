@@ -31,7 +31,7 @@ const upload = multer({
     }
     cb(null, true);
   },
-  limits: { fileSize: 20 * 1024 * 1024 }, // Max 20MB
+  limits: { fileSize: 50 * 1024 * 1024 }, // Max 20MB
 });
 
 // Pulls plain text out of an uploaded PDF so it can be embedded alongside
