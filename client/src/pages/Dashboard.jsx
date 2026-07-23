@@ -53,15 +53,15 @@ function Dashboard() {
 
         const updates = [
           ...materialsRes.data.map((m) => ({
-            text: `ðŸ“˜ New material uploaded: ${m.subject}`,
+            text: `[Material] New upload: ${m.subject}`,
             createdAt: m.createdAt,
           })),
           ...itemsRes.data.map((i) => ({
-            text: `ðŸ’» New item posted: ${i.title}`,
+            text: `[Item] New post: ${i.title}`,
             createdAt: i.createdAt,
           })),
           ...connectRes.data.map((c) => ({
-            text: `ðŸŽ“ New post: ${c.question || c.content || "Question posted"}`,
+            text: `[Question] New post: ${c.question || c.content || "Question posted"}`,
             createdAt: c.createdAt,
           })),
         ];
@@ -250,7 +250,7 @@ function Dashboard() {
                   <div>
                     <h4 className="font-bold text-indigo-900 text-lg mb-1">{item.title}</h4>
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
-                    <p className="font-bold text-green-600 text-lg mb-3">â‚¹{item.price}</p>
+                    <p className="font-bold text-green-600 text-lg mb-3">{"\u20B9"}{item.price}</p>
 
                     {item.image && (
                       <img
