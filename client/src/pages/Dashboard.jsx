@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { User as UserIcon, Camera } from "lucide-react";
 
 // Use the environment variable from your .env file
 const API_URL = process.env.REACT_APP_API_URL;
@@ -9,14 +10,10 @@ function Dashboard() {
   const [user, setUser] = useState(null);
   const [latestUpdates, setLatestUpdates] = useState([]);
   const [userItems, setUserItems] = useState([]);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-
-  // Helper function for image URLs
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return "/default-avatar.png";
-    return imagePath.startsWith("http") ? imagePath : `${API_URL}/${imagePath}`;
-  };
+  const fileInputRef = useRef(null);
 
   // -------------------- FETCH USER PROFILE --------------------
   useEffect(() => {
@@ -56,15 +53,15 @@ function Dashboard() {
 
         const updates = [
           ...materialsRes.data.map((m) => ({
-            text: `📘 New material uploaded: ${m.subject}`,
+            text: `ðŸ“˜ New material uploaded: ${m.subject}`,
             createdAt: m.createdAt,
           })),
           ...itemsRes.data.map((i) => ({
-            text: `💻 New item posted: ${i.title}`,
+            text: `ðŸ’» New item posted: ${i.title}`,
             createdAt: i.createdAt,
           })),
           ...connectRes.data.map((c) => ({
-            text: `🎓 New post: ${c.question || c.content || "Question posted"}`,
+            text: `ðŸŽ“ New post: ${c.question || c.content || "Question posted"}`,
             createdAt: c.createdAt,
           })),
         ];
@@ -119,6 +116,37 @@ function Dashboard() {
     }
   };
 
+  // -------------------- AVATAR UPLOAD --------------------
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setUploadingAvatar(true);
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await axios.post(`${API_URL}/api/users/profile/avatar`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setUser(res.data.user);
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      alert(err.response?.data?.message || "Failed to update profile photo.");
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = ""; // allow re-selecting the same file later
+    }
+  };
+
   if (!user) {
     return <div className="text-center mt-10 text-lg text-white">Loading...</div>;
   }
@@ -129,11 +157,39 @@ function Dashboard() {
 
         {/* Profile Section */}
         <div className="flex items-center gap-6 bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-lg">
-          <img
-            src={getImageUrl(user?.avatar)}
-            alt="Profile"
-            className="w-20 h-20 rounded-full border-4 border-blue-500 object-cover bg-slate-700"
-          />
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={handleAvatarClick}
+              className="w-20 h-20 rounded-full border-4 border-blue-500 bg-slate-700 overflow-hidden flex items-center justify-center"
+              title="Change profile photo"
+            >
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon size={36} className="text-slate-400" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleAvatarClick}
+              className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              title="Change profile photo"
+            >
+              {uploadingAvatar ? (
+                <span className="text-[10px] text-white font-bold">...</span>
+              ) : (
+                <Camera size={20} className="text-white" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </div>
           <div>
             <h1 className="text-2xl font-bold text-white">
               Welcome, {user?.name || "Student"}
@@ -194,11 +250,11 @@ function Dashboard() {
                   <div>
                     <h4 className="font-bold text-indigo-900 text-lg mb-1">{item.title}</h4>
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
-                    <p className="font-bold text-green-600 text-lg mb-3">₹{item.price}</p>
+                    <p className="font-bold text-green-600 text-lg mb-3">â‚¹{item.price}</p>
 
                     {item.image && (
                       <img
-                        src={getImageUrl(item.image)}
+                        src={item.image}
                         alt={item.title}
                         className="w-full h-40 object-contain mt-2 rounded bg-gray-50 border"
                       />
@@ -233,3 +289,4 @@ function Dashboard() {
 }
 
 export default Dashboard;
+

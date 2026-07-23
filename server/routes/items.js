@@ -1,11 +1,12 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
 const Item = require("../models/Item");
 const auth = require("../middleware/auth");
-const upload = require("../middleware/upload"); // ✅ import multer
+const upload = require("../middleware/upload"); // âœ… import multer (memory storage)
 const { generateEmbedding } = require("../utils/embeddings");
+const { uploadBufferToCloudinary } = require("../utils/uploadToCloudinary");
 
-// 🟢 POST: Add a new item (with image upload)
+// ðŸŸ¢ POST: Add a new item (with image upload)
 router.post("/", auth, upload.single("image"), async (req, res) => {
   try {
     const { title, description, price } = req.body;
@@ -17,24 +18,29 @@ router.post("/", auth, upload.single("image"), async (req, res) => {
     // Generate a semantic embedding from title+description so this item is
     // findable via meaning, not just exact keyword matches (see /api/search).
     // If the embedding call fails (rate limit, no token, etc.) we still save
-    // the item — embedding is an enhancement, not a hard requirement.
+    // the item â€” embedding is an enhancement, not a hard requirement.
     const embedding = await generateEmbedding(`${title}. ${description}`);
+
+    // Upload the image buffer straight to Cloudinary - never touches local
+    // disk, so it survives Render redeploys/restarts.
+    const { url: imageUrl } = await uploadBufferToCloudinary(req.file.buffer, {
+      folder: "campus-connect/items",
+      resourceType: "image",
+    });
 
     const newItem = new Item({
       title,
       description,
       price,
-      image: req.file.filename, // ✅ use uploaded filename
+      image: imageUrl, // full Cloudinary URL, stored directly
       user: req.user.id,
       ...(embedding && { embedding }),
     });
 
     const savedItem = await newItem.save();
 
-    // Return the saved item with full image URL
     res.status(201).json({
       ...savedItem._doc,
-      image: `${req.protocol}://${req.get("host")}/uploads/items/${savedItem.image}`,
     });
   } catch (err) {
     console.error("Error adding item:", err);
@@ -42,17 +48,13 @@ router.post("/", auth, upload.single("image"), async (req, res) => {
   }
 });
 
-// 🟢 GET: Fetch all items
+// ðŸŸ¢ GET: Fetch all items
 router.get("/", async (req, res) => {
   try {
     const items = await Item.find().populate("user", "name").sort({ createdAt: -1 });
 
-    const modified = items.map((item) => ({
-      ...item._doc,
-      image: item.image
-        ? `${req.protocol}://${req.get("host")}/uploads/items/${item.image}`
-        : null,
-    }));
+    // image is already a full Cloudinary URL - no reconstruction needed
+    const modified = items.map((item) => ({ ...item._doc }));
 
     res.json(modified);
   } catch (err) {
@@ -61,17 +63,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-// 🟢 GET: Fetch items of the logged-in user
+// ðŸŸ¢ GET: Fetch items of the logged-in user
 router.get("/user", auth, async (req, res) => {
   try {
     const items = await Item.find({ user: req.user.id }).sort({ createdAt: -1 });
 
-    const modified = items.map((item) => ({
-      ...item._doc,
-      image: item.image
-        ? `${req.protocol}://${req.get("host")}/uploads/items/${item.image}`
-        : null,
-    }));
+    const modified = items.map((item) => ({ ...item._doc }));
 
     res.json(modified);
   } catch (err) {
@@ -80,7 +77,7 @@ router.get("/user", auth, async (req, res) => {
   }
 });
 
-// 🟢 DELETE: Delete an item
+// ðŸŸ¢ DELETE: Delete an item
 router.delete("/:id", auth, async (req, res) => {
   try {
     const item = await Item.findById(req.params.id);
@@ -98,3 +95,4 @@ router.delete("/:id", auth, async (req, res) => {
 });
 
 module.exports = router;
+

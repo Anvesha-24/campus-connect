@@ -78,7 +78,6 @@ function Material() {
     }, 400); // debounce so we don't fire a request on every keystroke
 
     return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, materials]);
 
   // -------------------- UPLOAD HANDLER --------------------

@@ -1,4 +1,4 @@
-const mongoose=require("mongoose");
+﻿const mongoose=require("mongoose");
 
 const userSchema=new mongoose.Schema(
     {
@@ -21,7 +21,12 @@ const userSchema=new mongoose.Schema(
             enum:["student","senior","admin"],
             default:"student",
         },
+        avatar:{
+            type:String,
+            default:null,
+        },
     },
     {timestamps:true}
 );
 module.exports=mongoose.model("User",userSchema);
+

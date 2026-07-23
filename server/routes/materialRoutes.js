@@ -1,30 +1,17 @@
 ﻿const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const { PDFParse } = require("pdf-parse");
 const Material = require("../models/Material");
 const authMiddleware = require("../middleware/auth");
 const { generateEmbedding } = require("../utils/embeddings");
-
-// ------------------- UPLOAD FOLDER -------------------
-const uploadDir = path.join(__dirname, "..", "uploads", "materials");
-
-// Ensure folder exists
-fs.mkdirSync(uploadDir, { recursive: true });
+const { uploadBufferToCloudinary } = require("../utils/uploadToCloudinary");
 
 // ------------------- MULTER CONFIG -------------------
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const cleanName = file.originalname.replace(/\s+/g, "_"); // replace spaces
-    cb(null, `${Date.now()}-${cleanName}`);
-  },
-});
-
+// Memory storage - the PDF buffer goes straight to Cloudinary and to
+// pdf-parse, never touching Render's ephemeral local disk.
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     if (!file.originalname.match(/\.(pdf)$/i)) {
       return cb(new Error("Only PDF files are allowed"), false);
@@ -34,14 +21,10 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // Max 50MB
 });
 
-// Pulls plain text out of an uploaded PDF. No length cap here - we extract
-// everything and let the chunking step below decide what actually gets
-// embedded. Some PDFs open with a syllabus/table of contents, others dive
-// straight into content, so we can't assume where the "real" material starts.
-async function extractPdfText(filePath) {
+// Pulls plain text out of an uploaded PDF buffer directly (no disk read).
+async function extractPdfText(buffer) {
   try {
-    const dataBuffer = fs.readFileSync(filePath);
-    const parser = new PDFParse({ data: dataBuffer });
+    const parser = new PDFParse({ data: buffer });
     const result = await parser.getText();
     return result.text.replace(/\s+/g, " ").trim();
   } catch (err) {
@@ -55,14 +38,12 @@ async function extractPdfText(filePath) {
 // embedding one long blob (which would just get truncated, and would be
 // biased toward whatever happens to be at the very start - often a syllabus,
 // not real content), we split the document into chunks, embed each chunk
-// separately, and average them into one document-level vector. This way a
-// PDF's real explanatory content contributes to the final embedding even if
-// it doesn't appear until several pages in.
-const CHUNK_SIZE = 1200; // characters per chunk, comfortably under the model's effective window
-const MAX_CHUNKS = 4; // caps embedding API calls per upload (subject/desc chunk + up to 4 content chunks)
+// separately, and average them into one document-level vector.
+const CHUNK_SIZE = 1200;
+const MAX_CHUNKS = 4;
 
 async function generateDocumentEmbedding(subject, description, extractedText) {
-  const chunks = [`${subject}. ${description}`]; // always include this - short, reliable signal
+  const chunks = [`${subject}. ${description}`];
 
   if (extractedText) {
     for (let i = 0; i < extractedText.length && chunks.length - 1 < MAX_CHUNKS; i += CHUNK_SIZE) {
@@ -76,7 +57,6 @@ async function generateDocumentEmbedding(subject, description, extractedText) {
 
   if (validEmbeddings.length === 0) return null;
 
-  // Mean-pool across all chunk embeddings into a single document vector.
   const dim = validEmbeddings[0].length;
   const pooled = new Array(dim).fill(0);
   for (const vec of validEmbeddings) {
@@ -92,11 +72,12 @@ router.get("/", authMiddleware, async (req, res) => {
       .populate("uploadedBy", "name email")
       .sort({ createdAt: -1 });
 
+    // fileUrl is already a full Cloudinary URL - no reconstruction needed
     const modified = materials.map((m) => ({
       _id: m._id,
       subject: m.subject,
       description: m.description,
-      fileUrl: `${req.protocol}://${req.get("host")}/uploads/materials/${m.fileUrl}`,
+      fileUrl: m.fileUrl,
       uploadedBy: m.uploadedBy,
     }));
 
@@ -116,14 +97,19 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req, res) =
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const filePath = path.join(uploadDir, req.file.filename);
-    const extractedText = await extractPdfText(filePath);
+    const extractedText = await extractPdfText(req.file.buffer);
     const embedding = await generateDocumentEmbedding(subject, description, extractedText);
+
+    // Upload the PDF buffer to Cloudinary as a "raw" resource (non-image file)
+    const { url: fileUrl } = await uploadBufferToCloudinary(req.file.buffer, {
+      folder: "campus-connect/materials",
+      resourceType: "raw",
+    });
 
     const material = new Material({
       subject,
       description,
-      fileUrl: req.file.filename,
+      fileUrl, // full Cloudinary URL, stored directly
       uploadedBy: req.user.id,
       ...(embedding && { embedding }),
     });
@@ -136,7 +122,7 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req, res) =
         _id: material._id,
         subject: material.subject,
         description: material.description,
-        fileUrl: `${req.protocol}://${req.get("host")}/uploads/materials/${material.fileUrl}`,
+        fileUrl: material.fileUrl,
         uploadedBy: {
           _id: req.user.id,
           name: req.user.name,
